@@ -140,8 +140,29 @@
     }
     toast('Copied'); return true;
   }
+  const CHECK_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  function flashCopied(btn) {
+    if (btn.dataset.copying) return;
+    btn.dataset.copying = '1';
+    const original = btn.innerHTML;
+    const isPrimary = btn.classList.contains('btn-primary');
+    btn.innerHTML = CHECK_ICON + '<span>Copied</span>';
+    btn.style.transition = 'transform .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease';
+    btn.style.transform = 'scale(1.05)';
+    if (isPrimary) btn.style.background = '#16a34a';
+    else { btn.style.borderColor = '#16a34a'; btn.style.color = '#16a34a'; }
+    setTimeout(() => { btn.style.transform = 'scale(1)'; }, 150);
+    setTimeout(() => {
+      btn.innerHTML = original;
+      btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = '';
+      delete btn.dataset.copying;
+    }, 1200);
+  }
   document.querySelectorAll('[data-copy]').forEach(b =>
-    b.addEventListener('click', () => copyText($(b.dataset.copy).value.trim())));
+    b.addEventListener('click', async () => {
+      const ok = await copyText($(b.dataset.copy).value.trim());
+      if (ok) flashCopied(b);
+    }));
   $('toggleToken').addEventListener('click', (e) => {
     const t = $('token'), show = t.type === 'password';
     t.type = show ? 'text' : 'password';
@@ -162,24 +183,46 @@
     inbox.style.color = isError ? '#e5484d' : '';
     inbox.textContent = msg;
   }
-  function showOtp(otp, time, from, html, subject) {
+  const MAIL_ICON_SM = '<svg  width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>';
+  const CLOCK_ICON_SM = '<svg  width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
+  const COPY_ICON = '<svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  const VIEW_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>';
+
+  function showMail(mail) {
+    const { otp, time, from, html, subject } = mail;
     inbox.className = ''; inbox.style.color = '';
-    const viewBtn = html ? `<button id="viewEmail" class="btn-ghost h-10 px-4 text-sm font-medium shrink-0 inline-flex items-center justify-center gap-1.5"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>View email</button>` : '';
-    inbox.innerHTML = `
-      <div class="otp-card p-5 sm:p-6">
+    const viewBtn = html ? `<button id="viewEmail" class="btn-ghost h-10 px-4 text-sm font-medium shrink-0 inline-flex items-center justify-center gap-1.5">${VIEW_ICON}View email</button>` : '';
+    const headerRow = `
         <div class="flex items-center justify-between text-xs muted mb-3 gap-3">
-          <span class="inline-flex items-center gap-1.5 min-w-0 truncate"><svg  width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg><span class="truncate">${subject ? esc(subject) : (from ? 'From ' + esc(from) : 'New OTP')}</span></span>
-          <time class="inline-flex items-center gap-1.5 shrink-0"><svg  width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${fmtTime(time)}</time>
-        </div>
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div id="otpValue" class="font-mono font-bold text-4xl tracking-widest break-all">${esc(otp)}</div>
-          <div class="flex gap-2 shrink-0">
-            ${viewBtn}
-            <button id="copyOtp" class="btn-primary h-10 px-4 text-sm font-medium shrink-0 inline-flex items-center justify-center gap-1.5"><svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy OTP</button>
+          <span class="inline-flex items-center gap-1.5 min-w-0 truncate">${MAIL_ICON_SM}<span class="truncate">${subject ? esc(subject) : (from ? 'From ' + esc(from) : 'New message')}</span></span>
+          <time class="inline-flex items-center gap-1.5 shrink-0">${CLOCK_ICON_SM}${fmtTime(time)}</time>
+        </div>`;
+    if (otp) {
+      inbox.innerHTML = `
+        <div class="otp-card p-5 sm:p-6">
+          ${headerRow}
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div id="otpValue" class="font-mono font-bold text-4xl tracking-widest break-all">${esc(otp)}</div>
+            <div class="flex gap-2 shrink-0">
+              ${viewBtn}
+              <button id="copyOtp" class="btn-primary h-10 px-4 text-sm font-medium shrink-0 inline-flex items-center justify-center gap-1.5">${COPY_ICON}Copy OTP</button>
+            </div>
           </div>
-        </div>
-      </div>`;
-    $('copyOtp').addEventListener('click', () => copyText(String(otp)));
+        </div>`;
+      $('copyOtp').addEventListener('click', async () => {
+        const ok = await copyText(String(otp));
+        if (ok) flashCopied($('copyOtp'));
+      });
+    } else {
+      inbox.innerHTML = `
+        <div class="card p-5 sm:p-6">
+          ${headerRow}
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <p class="text-sm muted m-0">No OTP code found in this message.</p>
+            ${viewBtn}
+          </div>
+        </div>`;
+    }
     if (html) $('viewEmail').addEventListener('click', () => openEmailModal(html, subject || from || 'Email'));
   }
 
@@ -201,12 +244,12 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeEmailModal(); });
 
   // Fetch
-  function extractOtp(data) {
+  function extractMail(data) {
     if (!data) return null;
     if (Array.isArray(data)) data = data[0];
     if (!data || typeof data !== 'object') return null;
-    const otp = data.otp ?? data.code ?? data.OTP ?? data.data?.otp;
-    if (otp === undefined || otp === null || String(otp).trim() === '') return null;
+    const otpRaw = data.otp ?? data.code ?? data.OTP ?? data.data?.otp;
+    const otp = (otpRaw === undefined || otpRaw === null || String(otpRaw).trim() === '') ? null : otpRaw;
     return {
       otp, time: data.timestamp ?? data.time ?? data.date ?? data.received_at ?? data.receivedAt,
       from: data.from ?? data.sender, html: data.html ?? null, subject: data.subject ?? null
@@ -223,7 +266,7 @@
     checkLabel.textContent = on ? 'Checking…' : 'Check New Mail';
   }
 
-  let lastOtp = null;
+  let lastSig = null;
   async function checkMail(silent) {
     if (loading) return;
     const email = $('email').value.trim();
@@ -254,14 +297,15 @@
       let data;
       try { data = await res.json(); }
       catch { throw new Error('The API did not return valid JSON'); }
-      const found = extractOtp(data);
+      const found = extractMail(data);
       if (found) {
-        // Skip re-render if a silent poll finds the same OTP already shown (avoids flicker/toast spam)
-        if (silent && found.otp === lastOtp) return;
-        lastOtp = found.otp;
-        showOtp(found.otp, found.time, found.from, found.html, found.subject);
+        // Skip re-render if a silent poll finds the same message already shown (avoids flicker)
+        const sig = found.time || found.otp || found.subject || JSON.stringify(found);
+        if (silent && sig === lastSig) return;
+        lastSig = sig;
+        showMail(found);
       } else if (!silent) {
-        showMessage('No new OTP received yet. Please wait.');
+        showMessage('No new mail received yet. Please wait.');
       }
     } catch (err) {
       if (silent) return; // don't spam errors from background polling
