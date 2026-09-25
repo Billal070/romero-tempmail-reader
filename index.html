@@ -12,8 +12,8 @@
     mono: ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'] } } } };
 </script>
 <style>
-  :root { --bg:#fafafa; --card:#fff; --border:#eaeaea; --fg:#000; --muted:#666; --btn:#000; --btnfg:#fff; --hl:#f0f7ff; --hlb:#0070f3; }
-  .dark { --bg:#000; --card:#0a0a0a; --border:#333; --fg:#ededed; --muted:#a1a1a1; --btn:#ededed; --btnfg:#000; --hl:#0a1a2f; --hlb:#3291ff; }
+  :root { --bg:#fafafa; --card:#fff; --border:#eaeaea; --fg:#000; --muted:#666; --btn:#000; --btnfg:#fff; --hl:#f0f7ff; --hlb:#0070f3; --danger-bg:#fee2e2; --danger-fg:#dc2626; }
+  .dark { --bg:#000; --card:#0a0a0a; --border:#333; --fg:#ededed; --muted:#a1a1a1; --btn:#ededed; --btnfg:#000; --hl:#0a1a2f; --hlb:#3291ff; --danger-bg:#3b0d0d; --danger-fg:#f87171; }
   body { background:var(--bg); color:var(--fg); }
   .card { background:var(--card); border:1px solid var(--border); border-radius:8px; }
   .field { background:var(--card); border:1px solid var(--border); border-radius:6px; color:var(--fg); }
@@ -84,7 +84,10 @@
           <button id="refreshBtn" class="btn-ghost h-8 px-3 text-xs font-medium inline-flex items-center gap-1.5" aria-label="Refresh inbox"><svg id="refreshIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5M3 21v-5h5"/></svg>Refresh</button>
         </div>
       </div>
-      <div id="inbox" class="card p-6 text-sm muted text-center">Enter an email address and check for new mail.</div>
+      <p id="expiryInfo" class="text-xs muted mb-3 mt-[-4px]">Messages are kept here for 24 hours.</p>
+      <div id="inbox" class="space-y-3">
+        <div class="card p-6 text-sm muted text-center">Enter an email address and check for new mail.</div>
+      </div>
     </section>
   </main>
 
@@ -97,6 +100,17 @@
         </button>
       </div>
       <iframe id="modalFrame" class="flex-1 w-full bg-white" sandbox="allow-popups" referrerpolicy="no-referrer"></iframe>
+    </div>
+  </div>
+
+  <div id="expiredModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.6)">
+    <div class="card w-full max-w-sm p-6 text-center">
+      <div class="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4" style="background:var(--danger-bg); color:var(--danger-fg)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      </div>
+      <h3 class="font-semibold text-base mb-1.5">Mailbox expired</h3>
+      <p class="text-sm muted mb-5">This address's mail data was automatically deleted 24 hours after it was first used. Send new mail to this address to start a fresh inbox.</p>
+      <button id="expiredOk" class="btn-primary w-full h-10 text-sm font-medium">OK</button>
     </div>
   </div>
 
@@ -179,42 +193,45 @@
     return isNaN(d) ? esc(ts) : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'medium' });
   }
   function showMessage(msg, isError) {
-    inbox.className = 'card p-6 text-sm text-center ' + (isError ? '' : 'muted');
-    inbox.style.color = isError ? '#e5484d' : '';
-    inbox.textContent = msg;
+    const card = document.createElement('div');
+    card.className = 'card p-6 text-sm text-center ' + (isError ? '' : 'muted');
+    if (isError) card.style.color = '#e5484d';
+    card.textContent = msg;
+    inbox.innerHTML = '';
+    inbox.appendChild(card);
   }
   const MAIL_ICON_SM = '<svg  width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>';
   const CLOCK_ICON_SM = '<svg  width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
   const COPY_ICON = '<svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
   const VIEW_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>';
 
-  function showMail(mail) {
-    const { otp, time, from, html, subject } = mail;
-    inbox.className = ''; inbox.style.color = '';
-    const viewBtn = html ? `<button id="viewEmail" class="btn-ghost h-10 px-4 text-sm font-medium shrink-0 inline-flex items-center justify-center gap-1.5">${VIEW_ICON}View email</button>` : '';
+  // Renders the full inbox as a stacked list, newest message first.
+  // Uses event delegation (data-action/data-id) instead of per-card ids,
+  // since many cards with the same button can exist on screen at once.
+  let mailsById = {};
+
+  function mailCardHtml(mail) {
+    const { id, otp, time, from, html, subject } = mail;
+    const viewBtn = html ? `<button data-action="view" data-id="${id}" class="btn-ghost h-10 px-4 text-sm font-medium shrink-0 inline-flex items-center justify-center gap-1.5">${VIEW_ICON}View email</button>` : '';
     const headerRow = `
         <div class="flex items-center justify-between text-xs muted mb-3 gap-3">
           <span class="inline-flex items-center gap-1.5 min-w-0 truncate">${MAIL_ICON_SM}<span class="truncate">${subject ? esc(subject) : (from ? 'From ' + esc(from) : 'New message')}</span></span>
           <time class="inline-flex items-center gap-1.5 shrink-0">${CLOCK_ICON_SM}${fmtTime(time)}</time>
         </div>`;
     if (otp) {
-      inbox.innerHTML = `
+      return `
         <div class="otp-card p-5 sm:p-6">
           ${headerRow}
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div id="otpValue" class="font-mono font-bold text-4xl tracking-widest break-all">${esc(otp)}</div>
+            <div class="font-mono font-bold text-4xl tracking-widest break-all">${esc(otp)}</div>
             <div class="flex gap-2 shrink-0">
               ${viewBtn}
-              <button id="copyOtp" class="btn-primary h-10 px-4 text-sm font-medium shrink-0 inline-flex items-center justify-center gap-1.5">${COPY_ICON}Copy OTP</button>
+              <button data-action="copy-otp" data-id="${id}" class="btn-primary h-10 px-4 text-sm font-medium shrink-0 inline-flex items-center justify-center gap-1.5">${COPY_ICON}Copy OTP</button>
             </div>
           </div>
         </div>`;
-      $('copyOtp').addEventListener('click', async () => {
-        const ok = await copyText(String(otp));
-        if (ok) flashCopied($('copyOtp'));
-      });
-    } else {
-      inbox.innerHTML = `
+    }
+    return `
         <div class="card p-5 sm:p-6">
           ${headerRow}
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -222,9 +239,67 @@
             ${viewBtn}
           </div>
         </div>`;
-    }
-    if (html) $('viewEmail').addEventListener('click', () => openEmailModal(html, subject || from || 'Email'));
   }
+
+  function renderInbox(messages) {
+    inbox.className = 'space-y-3'; inbox.style.color = '';
+    if (!messages || !messages.length) {
+      inbox.innerHTML = `<div class="card p-6 text-sm muted text-center">No mail received yet in the last 24 hours.</div>`;
+      mailsById = {};
+      return;
+    }
+    mailsById = {};
+    inbox.innerHTML = messages.map((m, i) => {
+      const id = m.id || String(i);
+      mailsById[id] = m;
+      return mailCardHtml({ ...m, id });
+    }).join('');
+  }
+
+  inbox.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const mail = mailsById[btn.dataset.id];
+    if (!mail) return;
+    if (btn.dataset.action === 'copy-otp') {
+      const ok = await copyText(String(mail.otp));
+      if (ok) flashCopied(btn);
+    } else if (btn.dataset.action === 'view') {
+      openEmailModal(mail.html, mail.subject || mail.from || 'Email');
+    }
+  });
+
+  // Expired-mailbox popup
+  const expiredModal = $('expiredModal');
+  function showExpiredPopup() {
+    expiredModal.classList.remove('hidden'); expiredModal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeExpiredPopup() {
+    expiredModal.classList.add('hidden'); expiredModal.classList.remove('flex');
+    document.body.style.overflow = '';
+  }
+  $('expiredOk').addEventListener('click', closeExpiredPopup);
+
+  // Live 24h countdown for the address currently in the input.
+  // mailboxExpiresAt is set from the API's `expiresAt` field whenever we get
+  // a successful response; ticking is local (no extra network calls).
+  let mailboxExpiresAt = null;
+  let mailboxWasExpired = false;
+  function updateExpiryInfo() {
+    const el = $('expiryInfo');
+    if (!mailboxExpiresAt) { el.textContent = 'Messages are kept here for 24 hours.'; return; }
+    const diff = mailboxExpiresAt - Date.now();
+    if (diff <= 0) { el.textContent = 'This mailbox has expired.'; return; }
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    el.textContent = `Expires in ${h}h ${m}m.`;
+  }
+  setInterval(updateExpiryInfo, 30000);
+  $('email').addEventListener('input', () => {
+    mailboxExpiresAt = null; mailboxWasExpired = false; lastSig = null;
+    updateExpiryInfo();
+  });
 
   // Email preview modal
   const modal = $('emailModal'), modalFrame = $('modalFrame');
@@ -244,28 +319,28 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeEmailModal(); });
 
   // Fetch
-  function extractMail(data) {
-    if (!data) return null;
-    if (Array.isArray(data)) data = data[0];
+  function normalizeMail(data, fallbackId) {
     if (!data || typeof data !== 'object') return null;
     const otpRaw = data.otp ?? data.code ?? data.OTP ?? data.data?.otp;
     const otp = (otpRaw === undefined || otpRaw === null || String(otpRaw).trim() === '') ? null : otpRaw;
     return {
+      id: data.id ?? fallbackId,
       otp, time: data.timestamp ?? data.time ?? data.date ?? data.received_at ?? data.receivedAt,
       from: data.from ?? data.sender, html: data.html ?? null, subject: data.subject ?? null
     };
   }
+  // Accepts either the new { messages: [...] } list shape or a single legacy
+  // mail object, and always returns an array (newest first).
+  function extractMails(data) {
+    if (!data) return [];
+    const list = Array.isArray(data) ? data
+      : Array.isArray(data.messages) ? data.messages
+      : [data];
+    return list.map((m, i) => normalizeMail(m, String(i))).filter(Boolean);
+  }
+  function minDelay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
   let loading = false;
-  function setLoading(on) {
-    loading = on;
-    checkBtn.disabled = on; $('refreshBtn').disabled = on;
-    $('refreshIcon').classList.toggle('spin', on);
-    $('mailIcon').classList.toggle('hidden', on);
-    spinner.classList.toggle('hidden', !on);
-    checkLabel.textContent = on ? 'Checking…' : 'Check New Mail';
-  }
-
   let lastSig = null;
   async function checkMail(silent) {
     if (loading) return;
@@ -278,35 +353,55 @@
       if (silent) return;
       showMessage('Set WORKER_URL in the script to your Cloudflare Worker address.', true); return;
     }
-    if (!silent) setLoading(true);
-    else { $('refreshIcon').classList.add('spin'); }
+    loading = true;
+    checkBtn.disabled = true; $('refreshBtn').disabled = true;
+    $('refreshIcon').classList.add('spin');
+    if (!silent) {
+      $('mailIcon').classList.add('hidden'); spinner.classList.remove('hidden');
+      checkLabel.textContent = 'Checking…';
+    }
     let timedOut = false;
     const timeout = new Promise((_, reject) => {
       setTimeout(() => { timedOut = true; reject(new Error('TIMEOUT')); }, 15000);
     });
     try {
-      const res = await Promise.race([
-        fetch(WORKER_URL + '?email=' + encodeURIComponent(email)),
-        timeout
+      // Promise.all with a floor of ~650ms so the refresh icon completes at
+      // least one full visible rotation even when the API responds instantly.
+      const [res] = await Promise.all([
+        Promise.race([fetch(WORKER_URL + '?email=' + encodeURIComponent(email)), timeout]),
+        minDelay(650)
       ]);
       if (res.status === 404) {
-        if (!silent) showMessage('No new OTP received yet. Please wait.');
+        // Address has never received mail (or its 24h data already fully expired from KV).
+        mailboxExpiresAt = null; mailboxWasExpired = false;
+        updateExpiryInfo();
+        renderInbox([]);
+        return;
+      }
+      if (res.status === 410) {
+        // Strictly expired: 24h passed since this address's first message.
+        mailboxExpiresAt = null;
+        updateExpiryInfo();
+        renderInbox([]);
+        if (!mailboxWasExpired) {
+          mailboxWasExpired = true;
+          showExpiredPopup();
+          if (autoTimer) { clearInterval(autoTimer); autoTimer = null; $('autoRefresh').checked = false; }
+        }
         return;
       }
       if (!res.ok) throw new Error('Server returned ' + res.status);
       let data;
       try { data = await res.json(); }
       catch { throw new Error('The API did not return valid JSON'); }
-      const found = extractMail(data);
-      if (found) {
-        // Skip re-render if a silent poll finds the same message already shown (avoids flicker)
-        const sig = found.time || found.otp || found.subject || JSON.stringify(found);
-        if (silent && sig === lastSig) return;
-        lastSig = sig;
-        showMail(found);
-      } else if (!silent) {
-        showMessage('No new mail received yet. Please wait.');
-      }
+      mailboxWasExpired = false;
+      if (typeof data.expiresAt === 'number') mailboxExpiresAt = data.expiresAt;
+      updateExpiryInfo();
+      const mails = extractMails(data);
+      const sig = JSON.stringify(mails.map(m => m.id));
+      if (silent && sig === lastSig) return;
+      lastSig = sig;
+      renderInbox(mails);
     } catch (err) {
       if (silent) return; // don't spam errors from background polling
       const msg = timedOut ? 'The request timed out after 15 seconds.'
@@ -314,8 +409,11 @@
         : err.message;
       showMessage(msg, true);
     } finally {
-      if (!silent) setLoading(false);
-      else { $('refreshIcon').classList.remove('spin'); }
+      loading = false;
+      checkBtn.disabled = false; $('refreshBtn').disabled = false;
+      $('refreshIcon').classList.remove('spin');
+      $('mailIcon').classList.remove('hidden'); spinner.classList.add('hidden');
+      checkLabel.textContent = 'Check New Mail';
     }
   }
   checkBtn.addEventListener('click', () => checkMail(false));
