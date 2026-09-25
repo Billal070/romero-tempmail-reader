@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Romero Otp Reader</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: {
+    sans: ['Geist', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+    mono: ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'] } } } };
+</script>
+<style>
+  :root { --bg:#fafafa; --card:#fff; --border:#eaeaea; --fg:#000; --muted:#666; --btn:#000; --btnfg:#fff; --hl:#f0f7ff; --hlb:#0070f3; }
+  .dark { --bg:#000; --card:#0a0a0a; --border:#333; --fg:#ededed; --muted:#a1a1a1; --btn:#ededed; --btnfg:#000; --hl:#0a1a2f; --hlb:#3291ff; }
+  body { background:var(--bg); color:var(--fg); }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:8px; }
+  .field { background:var(--card); border:1px solid var(--border); border-radius:6px; color:var(--fg); }
+  .field:focus { outline:none; border-color:var(--fg); box-shadow:0 0 0 3px color-mix(in srgb, var(--fg) 12%, transparent); }
+  .btn-primary { background:var(--btn); color:var(--btnfg); border-radius:6px; }
+  .btn-primary:hover:not(:disabled) { opacity:.85; }
+  .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
+  .btn-ghost { background:var(--card); border:1px solid var(--border); border-radius:6px; color:var(--fg); }
+  .btn-ghost:hover { border-color:var(--fg); }
+  .btn-ghost:disabled { opacity:.6; cursor:not-allowed; }
+  .muted { color:var(--muted); }
+  .otp-card { background:var(--hl); border:1px solid var(--hlb); border-radius:8px; }
+  button:focus-visible { outline:2px solid var(--hlb); outline-offset:2px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin .8s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2s; } }
+</style>
+</head>
+<body class="font-sans antialiased min-h-screen">
+  <header class="border-b" style="border-color:var(--border); background:var(--card)">
+    <div class="max-w-2xl mx-auto px-4 h-16 grid grid-cols-[2rem_1fr_2rem] items-center">
+      <span aria-hidden="true"></span>
+      <div class="flex items-center justify-center gap-2.5 min-w-0">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+        <h1 class="text-xl sm:text-2xl font-bold tracking-tight whitespace-nowrap">Romero Otp Reader</h1>
+      </div>
+      <button id="themeBtn" class="btn-ghost h-8 w-8 flex items-center justify-center" aria-label="Toggle theme">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-4 py-8 space-y-6">
+    <section class="card p-5 sm:p-6 space-y-5">
+      <div>
+        <label for="email" class="flex items-center gap-1.5 text-sm font-medium mb-1.5"><svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>Email address</label>
+        <div class="flex gap-2">
+          <input id="email" type="email" autocomplete="off" spellcheck="false" placeholder="name@yourdomain.com" class="field flex-1 min-w-0 h-10 px-3 text-sm font-mono">
+          <button class="btn-ghost h-10 px-3 text-sm font-medium shrink-0 inline-flex items-center gap-1.5" data-copy="email"><svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+        </div>
+      </div>
+      <div>
+        <label for="token" class="flex items-center gap-1.5 text-sm font-medium mb-1.5"><svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3M17 6l3 3M14 9l2 2"/></svg>Token / password</label>
+        <div class="flex gap-2">
+          <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste token" class="field flex-1 min-w-0 h-10 px-3 text-sm font-mono">
+          <button id="toggleToken" class="btn-ghost h-10 w-10 flex items-center justify-center shrink-0" type="button" aria-label="Show token"><svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <button class="btn-ghost h-10 px-3 text-sm font-medium shrink-0 inline-flex items-center gap-1.5" data-copy="token"><svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+        </div>
+      </div>
+      <button id="checkBtn" class="btn-primary w-full h-11 text-sm font-medium flex items-center justify-center gap-2">
+        <svg id="spinner" class="spin hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55" /></svg>
+        <svg id="mailIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5M3 21v-5h5"/></svg><span id="checkLabel">Check New Mail</span>
+      </button>
+    </section>
+
+    <section aria-live="polite">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="flex items-center gap-1.5 text-sm font-semibold"><svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Inbox</h2>
+        <div class="flex items-center gap-2.5">
+          <label class="flex items-center gap-1.5 text-xs muted cursor-pointer select-none">
+            <span class="relative inline-block w-8 h-[18px]">
+              <input id="autoRefresh" type="checkbox" class="peer sr-only">
+              <span class="absolute inset-0 rounded-full transition-colors bg-[var(--border)] peer-checked:bg-[var(--hlb)]"></span>
+              <span class="absolute left-0.5 top-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform peer-checked:translate-x-[14px]" style="box-shadow:0 1px 2px rgba(0,0,0,.3)"></span>
+            </span>
+            Auto (10s)
+          </label>
+          <button id="refreshBtn" class="btn-ghost h-8 px-3 text-xs font-medium inline-flex items-center gap-1.5" aria-label="Refresh inbox"><svg id="refreshIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5M3 21v-5h5"/></svg>Refresh</button>
+        </div>
+      </div>
+      <div id="inbox" class="card p-6 text-sm muted text-center">Enter an email address and check for new mail.</div>
+    </section>
+  </main>
+
+  <div id="emailModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.6)">
+    <div class="card w-full max-w-2xl h-[85vh] flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-4 h-12 border-b shrink-0" style="border-color:var(--border)">
+        <span id="modalSubject" class="text-sm font-semibold truncate pr-3">Email</span>
+        <button id="modalClose" class="btn-ghost h-8 w-8 flex items-center justify-center shrink-0" aria-label="Close">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <iframe id="modalFrame" class="flex-1 w-full bg-white" sandbox="allow-popups" referrerpolicy="no-referrer"></iframe>
+    </div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite" class="fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-md text-sm font-medium opacity-0 pointer-events-none transition-opacity" style="background:var(--btn); color:var(--btnfg)"></div>
+
+<script>
+  // ===== CONFIG =====
+  const WORKER_URL = 'https://otp-worker.noobdevs007.workers.dev';
+
+  const $ = (id) => document.getElementById(id);
+  const inbox = $('inbox'), checkBtn = $('checkBtn'), spinner = $('spinner'), checkLabel = $('checkLabel');
+
+  // Theme
+  const icons = {
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'
+  };
+  function applyTheme(dark) {
+    document.documentElement.classList.toggle('dark', dark);
+    $('themeIcon').innerHTML = dark ? icons.sun : icons.moon;
+  }
+  applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
+  $('themeBtn').addEventListener('click', () => applyTheme(!document.documentElement.classList.contains('dark')));
+
+  const EYE_ON = `<svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`, EYE_OFF = `<svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6C3.6 8.4 2 12 2 12s3.5 7 10 7c1.9 0 3.6-.5 5-1.3"/><path d="m2 2 20 20M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>`;
+  // Toast + clipboard
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.style.opacity = 1;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.opacity = 0, 1600);
+  }
+  async function copyText(text) {
+    if (!text) { toast('Nothing to copy'); return false; }
+    try { await navigator.clipboard.writeText(text); }
+    catch {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = 0;
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, ta.value.length);
+      const ok = document.execCommand('copy'); document.body.removeChild(ta);
+      if (!ok) { toast('Copy failed'); return false; }
+    }
+    toast('Copied'); return true;
+  }
+  document.querySelectorAll('[data-copy]').forEach(b =>
+    b.addEventListener('click', () => copyText($(b.dataset.copy).value.trim())));
+  $('toggleToken').addEventListener('click', (e) => {
+    const t = $('token'), show = t.type === 'password';
+    t.type = show ? 'text' : 'password';
+    e.currentTarget.setAttribute('aria-label', show ? 'Hide token' : 'Show token');
+    e.currentTarget.innerHTML = show ? EYE_OFF : EYE_ON;
+  });
+
+  // Rendering
+  const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function fmtTime(ts) {
+    if (typeof ts === 'number' && ts < 1e12) ts *= 1000; // unix seconds -> ms
+    else if (typeof ts === 'string' && /^\d+$/.test(ts)) ts = Number(ts) < 1e12 ? Number(ts) * 1000 : Number(ts);
+    const d = ts ? new Date(ts) : new Date();
+    return isNaN(d) ? esc(ts) : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'medium' });
+  }
+  function showMessage(msg, isError) {
+    inbox.className = 'card p-6 text-sm text-center ' + (isError ? '' : 'muted');
+    inbox.style.color = isError ? '#e5484d' : '';
+    inbox.textContent = msg;
+  }
+  function showOtp(otp, time, from, html, subject) {
+    inbox.className = ''; inbox.style.color = '';
+    const viewBtn = html ? `<button id="viewEmail" class="btn-ghost h-10 px-4 text-sm font-medium shrink-0 inline-flex items-center justify-center gap-1.5"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>View email</button>` : '';
+    inbox.innerHTML = `
+      <div class="otp-card p-5 sm:p-6">
+        <div class="flex items-center justify-between text-xs muted mb-3 gap-3">
+          <span class="inline-flex items-center gap-1.5 min-w-0 truncate"><svg  width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg><span class="truncate">${subject ? esc(subject) : (from ? 'From ' + esc(from) : 'New OTP')}</span></span>
+          <time class="inline-flex items-center gap-1.5 shrink-0"><svg  width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${fmtTime(time)}</time>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div id="otpValue" class="font-mono font-bold text-4xl tracking-widest break-all">${esc(otp)}</div>
+          <div class="flex gap-2 shrink-0">
+            ${viewBtn}
+            <button id="copyOtp" class="btn-primary h-10 px-4 text-sm font-medium shrink-0 inline-flex items-center justify-center gap-1.5"><svg  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy OTP</button>
+          </div>
+        </div>
+      </div>`;
+    $('copyOtp').addEventListener('click', () => copyText(String(otp)));
+    if (html) $('viewEmail').addEventListener('click', () => openEmailModal(html, subject || from || 'Email'));
+  }
+
+  // Email preview modal
+  const modal = $('emailModal'), modalFrame = $('modalFrame');
+  function openEmailModal(html, subject) {
+    $('modalSubject').textContent = subject;
+    modalFrame.srcdoc = html;
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeEmailModal() {
+    modal.classList.add('hidden'); modal.classList.remove('flex');
+    modalFrame.srcdoc = '';
+    document.body.style.overflow = '';
+  }
+  $('modalClose').addEventListener('click', closeEmailModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeEmailModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeEmailModal(); });
+
+  // Fetch
+  function extractOtp(data) {
+    if (!data) return null;
+    if (Array.isArray(data)) data = data[0];
+    if (!data || typeof data !== 'object') return null;
+    const otp = data.otp ?? data.code ?? data.OTP ?? data.data?.otp;
+    if (otp === undefined || otp === null || String(otp).trim() === '') return null;
+    return {
+      otp, time: data.timestamp ?? data.time ?? data.date ?? data.received_at ?? data.receivedAt,
+      from: data.from ?? data.sender, html: data.html ?? null, subject: data.subject ?? null
+    };
+  }
+
+  let loading = false;
+  function setLoading(on) {
+    loading = on;
+    checkBtn.disabled = on; $('refreshBtn').disabled = on;
+    $('refreshIcon').classList.toggle('spin', on);
+    $('mailIcon').classList.toggle('hidden', on);
+    spinner.classList.toggle('hidden', !on);
+    checkLabel.textContent = on ? 'Checking…' : 'Check New Mail';
+  }
+
+  let lastOtp = null;
+  async function checkMail(silent) {
+    if (loading) return;
+    const email = $('email').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (silent) return;
+      showMessage('Enter a valid email address first.', true); $('email').focus(); return;
+    }
+    if (WORKER_URL.includes('your-worker-name')) {
+      if (silent) return;
+      showMessage('Set WORKER_URL in the script to your Cloudflare Worker address.', true); return;
+    }
+    if (!silent) setLoading(true);
+    else { $('refreshIcon').classList.add('spin'); }
+    let timedOut = false;
+    const timeout = new Promise((_, reject) => {
+      setTimeout(() => { timedOut = true; reject(new Error('TIMEOUT')); }, 15000);
+    });
+    try {
+      const res = await Promise.race([
+        fetch(WORKER_URL + '?email=' + encodeURIComponent(email)),
+        timeout
+      ]);
+      if (res.status === 404) {
+        if (!silent) showMessage('No new OTP received yet. Please wait.');
+        return;
+      }
+      if (!res.ok) throw new Error('Server returned ' + res.status);
+      let data;
+      try { data = await res.json(); }
+      catch { throw new Error('The API did not return valid JSON'); }
+      const found = extractOtp(data);
+      if (found) {
+        // Skip re-render if a silent poll finds the same OTP already shown (avoids flicker/toast spam)
+        if (silent && found.otp === lastOtp) return;
+        lastOtp = found.otp;
+        showOtp(found.otp, found.time, found.from, found.html, found.subject);
+      } else if (!silent) {
+        showMessage('No new OTP received yet. Please wait.');
+      }
+    } catch (err) {
+      if (silent) return; // don't spam errors from background polling
+      const msg = timedOut ? 'The request timed out after 15 seconds.'
+        : err instanceof TypeError ? 'Could not reach the API. Check the Worker URL, your connection and CORS headers.'
+        : err.message;
+      showMessage(msg, true);
+    } finally {
+      if (!silent) setLoading(false);
+      else { $('refreshIcon').classList.remove('spin'); }
+    }
+  }
+  checkBtn.addEventListener('click', () => checkMail(false));
+  $('refreshBtn').addEventListener('click', () => checkMail(false));
+  $('email').addEventListener('keydown', (e) => { if (e.key === 'Enter') checkMail(false); });
+
+  // Auto-refresh every 10s
+  let autoTimer = null;
+  $('autoRefresh').addEventListener('change', (e) => {
+    if (e.target.checked) {
+      autoTimer = setInterval(() => checkMail(true), 10000);
+    } else if (autoTimer) {
+      clearInterval(autoTimer); autoTimer = null;
+    }
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    else if (!document.hidden && $('autoRefresh').checked && !autoTimer) {
+      autoTimer = setInterval(() => checkMail(true), 10000);
+    }
+  });
+</script>
+</body>
+</html>
