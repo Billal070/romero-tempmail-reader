@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Romero Otp Reader</title>
+<title>Matrix Otp Reader</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
@@ -30,6 +30,10 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .spin { animation: spin .8s linear infinite; }
   @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2s; } }
+  .contact-dev-link { transition: transform .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease; }
+  .contact-dev-link:hover { transform: translateY(-2px); background-color: var(--hl); border-color: var(--hlb); box-shadow: 0 4px 14px color-mix(in srgb, var(--hlb) 25%, transparent); }
+  .contact-dev-link svg { transition: transform .18s ease; }
+  .contact-dev-link:hover svg { transform: rotate(-12deg) scale(1.1); }
 </style>
 </head>
 <body class="font-sans antialiased min-h-screen">
@@ -38,7 +42,7 @@
       <span aria-hidden="true"></span>
       <div class="flex items-center justify-center gap-2.5 min-w-0">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
-        <h1 class="text-xl sm:text-2xl font-bold tracking-tight whitespace-nowrap">Romero Otp Reader</h1>
+        <h1 class="text-xl sm:text-2xl font-bold tracking-tight whitespace-nowrap">Matrix Otp Reader</h1>
       </div>
       <button id="themeBtn" class="btn-ghost h-8 w-8 flex items-center justify-center" aria-label="Toggle theme">
         <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
@@ -89,6 +93,15 @@
         <div class="card p-6 text-sm muted text-center">Enter an email address and check for new mail.</div>
       </div>
     </section>
+
+    <footer class="pt-2 pb-4 text-center">
+      <a href="https://t.me/RO_M_IO_07" target="_blank" rel="noopener noreferrer"
+         class="contact-dev-link inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full"
+         style="color:var(--hlb); border:1px solid var(--border)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.9 4.4 2.7 12c-.9.35-.9 1.6.02 1.93l4.7 1.6 1.8 5.55c.24.75 1.2.96 1.76.4l2.5-2.5 4.7 3.5c.7.52 1.7.13 1.9-.72l3.4-15.5c.22-1-.7-1.8-1.58-1.36ZM8.9 13.4l9-6.7c.2-.15.42.1.24.28l-7.4 6.9c-.28.26-.46.6-.5.98l-.2 2-1.44-3.15c-.14-.3-.02-.65.3-.31Z"/></svg>
+        <span>Contact Dev</span>
+      </a>
+    </footer>
   </main>
 
   <div id="emailModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.6)">
